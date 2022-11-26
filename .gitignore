@@ -1,0 +1,7 @@
+*.mod
+*.pyc
+*.sw?
+build/**
+adaptive_anderson_solver.c
+*.cpython-*
+lib/*
