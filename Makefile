@@ -3,7 +3,7 @@ include Makefile.inc
 all: lib/libadaptive_anderson_solver.so python test
 
 clean:
-	rm -rf lib/* test/test test/test_debug *.mod build
+	rm -rf lib/* test/test test/test_debug *.mod build example/example *.pyc *.cpython-* adaptive_anderson_solver.c
 
 lib: lib/libadaptive_anderson_solver.so
 
