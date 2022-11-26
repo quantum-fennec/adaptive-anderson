@@ -47,7 +47,7 @@
         call assert(.not. res, "Not converged yet 2")
         call assert(state%used .eq. 3, "used must be 3")
         !the space for the result is allready "allocated"
-        write(*,*) state%non_collinear
+        !write(*,*) state%non_collinear
         call assert(state%non_collinear .eq. 1, &
                                 "non_collinear must be 1")
         !1.5 0 0 0  => 1.0
@@ -61,10 +61,10 @@
         !1.5 0 0 0 => 1.0 0 0 0
         !2.0 0 0 0 => 0.5 0.5 0 0
         !2.3 0.2 0 0
-        do i=1,state%used
-          WRITE (*,*) state%matrix(i, :state%used)
-        end do
-        WRITE (*,*) state%solution
+        !do i=1,state%used
+        !  WRITE (*,*) state%matrix(i, :state%used)
+        !end do
+        !WRITE (*,*) state%solution
 
         call assert_arr(x,x3, "assert x3" )
         call assert(.not. res, "Not yet converged 3")
@@ -82,9 +82,11 @@
         res = adaptive_anderson_step(4,state, x0,x )
         call adaptive_anderson_end(state)
 
-        write (*,*) "Sanity checks"
-        call assert(.not. associated(adaptive_anderson_init(4,x0, &
-           threshold=0d0)), "Sanity check of the threshold arg. failed")
+        !write (*,*) "Sanity checks"
+
+        !Negative threshold is allowed
+        !call assert(.not. associated(adaptive_anderson_init(4,x0, &
+        !   threshold=0d0)), "Sanity check of the threshold arg. failed")
         call assert(.not. associated(adaptive_anderson_init(4,x0, &
             alpha=-1d0)), "Sanity check of the alpha arg. failed")
         call assert(.not. associated(adaptive_anderson_init(4,x0, &

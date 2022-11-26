@@ -809,7 +809,8 @@ contains
             if (abs(solution(state%order(i))) >= abs(solution(state%order(1)))) then
                j = j + 1
                if (j >= 2) then
-                  write (*,*) 'AAMIX(NA 5) - no adaptation', solution(state%order(i)), solution(state%order(j))
+                  if (state%verbosity > 0) write (*,*) 'AAMIX(NA 5) - no adaptation', &
+                                                 solution(state%order(i)), solution(state%order(j))
                   ok = .False.
                   return
                end if
@@ -820,7 +821,7 @@ contains
       if ( coef < 1.2 ) then
          do i=2, state%non_collinear
                if (solution(state%order(i)) < -coef * 0.5) then
-                  write (*,*) 'AAMIX(NA 6) - no adaptation', coef, solution(state%order(i))
+                  if (state%verbosity > 0) write (*,*) 'AAMIX(NA 6) - no adaptation', coef, solution(state%order(i))
                   ok = .False.
                   return
                 end if
@@ -913,7 +914,7 @@ contains
           coef = 1d0/coef
      else
           call adaptive_anderson_no_adaptation(state)
-          write (*,*) 'AAMIX(NA 4) - coefficient == 1.0'
+          if(state%verbosity > 0) write (*,*) 'AAMIX(NA 4) - coefficient == 1.0'
           return
      end if
 
@@ -961,13 +962,15 @@ contains
 
          if (i .ne. state%previous .and. state%previous_solution(i) .ne. 0d0                                                   &
                                    .and. abs(state%previous_solution(state%previous) / state%previous_solution(i)) < 0.75 ) then
-             write (*,*) "AAMIX(NA 3)", coef, i, state%previous_solution(i), state%previous_solution(state%previous)
+             if(state%verbosity > 0) write (*,*) "AAMIX(NA 3)", coef, i, state%previous_solution(i), &
+                                                                state%previous_solution(state%previous)
              call adaptive_anderson_no_adaptation(state, coef)
              return
          end if
 
          if ( adaptive_anderson_convergence_ratio(state) < 0.2) then
-            write (*,*) "AAMIX(NA 4)",state%matrix(state%current, state%current),state%matrix(state%previous, state%previous)
+            if(state%verbosity > 0) write (*,*) "AAMIX(NA 4)",state%matrix(state%current, state%current), &
+                                                              state%matrix(state%previous, state%previous)
             call adaptive_anderson_no_adaptation(state, coef)
            return
          end if
