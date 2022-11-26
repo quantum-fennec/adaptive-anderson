@@ -227,6 +227,8 @@ contains
      end if
 
      if ( present( threshold )) then
+          !! negative threshold is allowed - it means no threshold (use it for your own custom
+          !! stopping criterium
           state%threshold = threshold
      else
           state%threshold = -1
@@ -791,6 +793,7 @@ contains
    end subroutine
 
 
+   ! Check, whether the adaptive coefficient shoud be accepted or not.
    function adaptive_anderson_adapt_alpha_check(state, solution, coef) result(ok)
       type(adaptive_anderson_solver_state), intent(inout) :: state
       real*8 :: solution(:)
@@ -1032,6 +1035,7 @@ contains
        state => null()
   end subroutine
 
+  !Unified handling of lapack errors
   subroutine check_lapack(info, msg)
     integer :: info
     character(len=*) :: msg
