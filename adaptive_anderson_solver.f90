@@ -1041,7 +1041,8 @@ contains
     character(len=*) :: msg
     if (info .ne. 0) then
        write (*,*) INFO
-       stop msg
+       write (*,*) msg
+       stop 255
     end if
   end subroutine
 

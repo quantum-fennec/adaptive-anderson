@@ -3,7 +3,7 @@
         character (len=* ) msg
         if (.not. val) then
           write (*,*) msg
-          stop
+          stop 255
         end if
       end subroutine
 
@@ -14,7 +14,7 @@
            write (*,*) msg
            write (*,*) a
            write (*,*) b
-           stop
+           stop 255
         end if
       end subroutine
 
