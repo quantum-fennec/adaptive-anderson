@@ -1,3 +1,5 @@
+""" This module defines a wrapper for Fortran Adaptive Anderson Solver. """
+
 cimport numpy as np
 import numpy as np
 import cython
@@ -18,8 +20,10 @@ cdef extern from "adaptive_anderson_solver.h":
     void __adaptive_anderson_solver_MOD_adaptive_anderson_end(adaptive_anderson_solver_state** state)
     cdef double __adaptive_anderson_solver_MOD_adaptive_anderson_residual_norm(adaptive_anderson_solver_state* state)
 
-
 cdef class AdaptiveAndersonSolver:
+    """
+    Class that wraps Adaptive Anderson solver.
+    """
 
     cdef adaptive_anderson_solver_state* state;
     cdef double[::1] x;
@@ -33,6 +37,46 @@ cdef class AdaptiveAndersonSolver:
           double restart_threshold=0.0, double b_ii_switch_to_linear=0.0,
           double linear_if_cycling=0.0, int debug_store_to_file=0,
           int verbosity=0):
+          r"""
+          x0: np.ndarray[dtype=double]
+              The array containing the initial guess $\rho^{\textrm{in}}_0$
+          history: int
+              History length --- the number of remembered input density/residual pairs.
+          tolerance: double
+              The convergence threshold. Negative value means, that the algorithm never
+              stop (however, you can stop it raising StopIteration exeption)
+          alpha: double
+              Mixing parameter $a_0$
+          adaptive\_alpha: bool
+              If it is false, use the standard (non-adaptive) Anderson mixing.
+          delta: double
+              Adaptation coeficient $d_{\textrm{base}}$.
+          delta_per_vector:double
+              Adaptation coeficient $d$.
+          weights: np.ndarray[double]
+              If the vector of weights ($w_i$) is given, the $L^2$ norms used thorough the algorithm are evaluated as follows: $\sqrt{\sum x_i^2 w_i} $.
+              To be used e.g. if components of the $\rho$ vector correspond to spatial elements with varying volumes.
+          norm_tolerance: double
+              If it is true, the {\tt threshold} is adjusted to be ``{\tt weights} independent'', i.e. it is multiplied by $\sqrt{\nicefrac{n}{\sum_i w_i}}$
+          collinearity_threshold: double
+              Residuals, whose linearly-independent component has norm lower than $\textrm{\tt collinearity_threshold}*|\tau_i|$ are omitted from minimizing.
+          adapt_from: int
+              Do not adapt $a_0$ in the first $\textrm{\tt adapt_from}-1$ iterations.
+
+          reqularization_lambda: double
+              A simple regularization: this coefficient is added to the diagonal of the matrix of the scalar product of the residuals. Experimental.
+          restart_threshold: double
+              In each step, discard the residuals whose norm is larger than $|\tau_i| / \textrm{\tt restart_threshold}$. Experimental.
+          b_ii_switch_to_linear: double
+              If $b_{i,i} / b_{i-1,i-1} > \textrm{\tt b_ii_switch_to_linear}$ or $< 1 / \textrm{\tt b_ii_switch_to_linear}$, switch to linear mixing.
+          linear_if_cycling: double
+              If $\exists j \leq i: |\rho^{\textrm{in}}_{i+1} - \rho^{\textrm{in}}_{j}| / |\rho^{\textrm{in}}_{i}| < a_i * \textrm{\tt linear_if_cycling} $, switch to linear mixing.
+
+          debug_store_to_file: int
+              If it is nonzero, fortran file handlers {\tt debug_store_to_file} and $\textrm{{\tt debug_store_to_file}}+1$ are used for storing $\rho^{\textrm{in}}_i$, {\tt weights} and $\tau_i$ to files {\tt and\_(inputs|residuals|weights).data}.
+          verbosity: int
+              The amount of the printed information about the mixing. All lines are prepended by {\tt AAMIX}. Zero means no output.
+          """
 
     def __cinit__(AdaptiveAndersonSolver self, double[::1] x0, double tolerance=1e-10,
           int history=6, double alpha=0.5, int adaptive_alpha=1, double delta=1.0,
@@ -68,12 +112,26 @@ cdef class AdaptiveAndersonSolver:
           return out
 
     cpdef double norm(AdaptiveAndersonSolver self):
+          "
+          Return the L2 norm of the last residual.
+          "
           return __adaptive_anderson_solver_MOD_adaptive_anderson_residual_norm(self.state)
 
     def __dealloc__(AdaptiveAndersonSolver self):
           if self.state is not NULL:
              __adaptive_anderson_solver_MOD_adaptive_anderson_end(&self.state)
 
+    def solve(AdaptiveAndersonSolver self, function):
+        """
+        Run (or complete) the "selfconsisten" cycle.
+        Stop, when the desired precision is reached or if the StopIteration have been raised.
+
+        Parameters
+        ----------
+        function: callable
+            The function, whose root is sought
+
+        """
           x=np.copy(self.x)
           try:
             while True:
@@ -93,17 +151,54 @@ def solve(function, double[::1] x0, double tolerance=1e-10,
           double restart_threshold=0.0, double b_ii_switch_to_linear=0.0,
           double linear_if_cycling=0.0, int debug_store_to_file=0,
           int verbosity=0):
-    """
+    r"""
     Adaptive Anderson mixing algorithm
 
     This function solves the mixing problem in the form of the root finding problem.
 
     Parameters
     ----------
-    fce: callable
+    function: callable
         Function of the signature f(np.ndarray[double, ndim=1, size=x]) -> np.ndarray[double, ndim=1, size=x]
-    """
+    x0: np.ndarray[dtype=double]
+        The array containing the initial guess $\rho^{\textrm{in}}_0$
+    history: int
+        History length --- the number of remembered input density/residual pairs.
+    tolerance: double
+        The convergence threshold. Negative value means, that the algorithm never
+        stop (however, you can stop it raising StopIteration exeption)
+    alpha: double
+        Mixing parameter $a_0$
+    adaptive\_alpha: bool
+        If it is false, use the standard (non-adaptive) Anderson mixing.
+    delta: double
+        Adaptation coeficient $d_{\textrm{base}}$.
+    delta_per_vector:double
+        Adaptation coeficient $d$.
+    weights: np.ndarray[double]
+        If the vector of weights ($w_i$) is given, the $L^2$ norms used thorough the algorithm are evaluated as follows: $\sqrt{\sum x_i^2 w_i} $.
+        To be used e.g. if components of the $\rho$ vector correspond to spatial elements with varying volumes.
+    norm_tolerance: double
+        If it is true, the {\tt threshold} is adjusted to be ``{\tt weights} independent'', i.e. it is multiplied by $\sqrt{\nicefrac{n}{\sum_i w_i}}$
+    collinearity_threshold: double
+        Residuals, whose linearly-independent component has norm lower than $\textrm{\tt collinearity_threshold}*|\tau_i|$ are omitted from minimizing.
+    adapt_from: int
+        Do not adapt $a_0$ in the first $\textrm{\tt adapt_from}-1$ iterations.
 
+    reqularization_lambda: double
+        A simple regularization: this coefficient is added to the diagonal of the matrix of the scalar product of the residuals. Experimental.
+    restart_threshold: double
+        In each step, discard the residuals whose norm is larger than $|\tau_i| / \textrm{\tt restart_threshold}$. Experimental.
+    b_ii_switch_to_linear: double
+        If $b_{i,i} / b_{i-1,i-1} > \textrm{\tt b_ii_switch_to_linear}$ or $< 1 / \textrm{\tt b_ii_switch_to_linear}$, switch to linear mixing.
+    linear_if_cycling: double
+        If $\exists j \leq i: |\rho^{\textrm{in}}_{i+1} - \rho^{\textrm{in}}_{j}| / |\rho^{\textrm{in}}_{i}| < a_i * \textrm{\tt linear_if_cycling} $, switch to linear mixing.
+
+    debug_store_to_file: int
+        If it is nonzero, fortran file handlers {\tt debug_store_to_file} and $\textrm{{\tt debug_store_to_file}}+1$ are used for storing $\rho^{\textrm{in}}_i$, {\tt weights} and $\tau_i$ to files {\tt and\_(inputs|residuals|weights).data}.
+    verbosity: int
+        The amount of the printed information about the mixing. All lines are prepended by {\tt AAMIX}. Zero means no output.
+    """
     cdef AdaptiveAndersonSolver aa = AdaptiveAndersonSolver(x0,
                                 history=history, tolerance=tolerance, alpha=alpha,
                                 adaptive_alpha=adaptive_alpha, delta=delta,
