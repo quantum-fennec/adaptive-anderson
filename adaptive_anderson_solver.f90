@@ -406,7 +406,7 @@ contains
      real*8 :: norm
      real*8 :: threshold
 
-     norm = state%matrix(state%current, state%current)
+     norm = sqrt(state%matrix(state%current, state%current))
      adaptive_anderson_check_convergence = &
         threshold > 0d0 .and.  norm < threshold
   end function
