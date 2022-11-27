@@ -90,7 +90,7 @@ cdef class AdaptiveAndersonSolver:
 
           cdef int size = x0.size
 
-          self.x = x
+          self.x = x0
           self.state = __adaptive_anderson_solver_MOD_adaptive_anderson_init(&size, &x0[0],
                         history=&history, tolerance=&tolerance, alpha=&alpha,
                         adaptive_alpha=&adaptive_alpha, delta=&delta,
@@ -112,9 +112,9 @@ cdef class AdaptiveAndersonSolver:
           return out
 
     cpdef double norm(AdaptiveAndersonSolver self):
-          "
+          """
           Return the L2 norm of the last residual.
-          "
+          """
           return __adaptive_anderson_solver_MOD_adaptive_anderson_residual_norm(self.state)
 
     def __dealloc__(AdaptiveAndersonSolver self):
@@ -132,15 +132,15 @@ cdef class AdaptiveAndersonSolver:
             The function, whose root is sought
 
         """
-          x=np.copy(self.x)
-          try:
-            while True:
-                res = function(x)
-                if self.step(res, x):
-                    break
-          except StopIteration:
-            pass
-          return x
+        x=np.copy(self.x)
+        try:
+          while True:
+              res = function(x)
+              if self.step(res, x):
+                  break
+        except StopIteration:
+          pass
+        return x
 
 
 def solve(function, double[::1] x0, double tolerance=1e-10,
