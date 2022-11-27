@@ -193,6 +193,7 @@ contains
      state%n = n
      state%used = 0
      state%current = 0
+     state%previous = 0
 
      state%debug_store_to_file = merge(debug_store_to_file, 0,present(debug_store_to_file))
 
@@ -335,11 +336,7 @@ contains
   function adaptive_anderson_residual_norm(state)
     real*8 adaptive_anderson_residual_norm
     type(adaptive_anderson_solver_state), intent(in) :: state
-      if (state%current .eq. 1) then
-        adaptive_anderson_residual_norm = state%matrix(state%used, state%used)
-      else
-        adaptive_anderson_residual_norm = state%matrix(state%current-1, state%current-1)
-      end if
+    adaptive_anderson_residual_norm = sqrt(state%matrix(state%previous, state%previous))
   end function
 
   !!! Given result of previous iteration, return pointer to new
@@ -581,7 +578,7 @@ contains
              state%current = state%current - shift
           end if
            if (i == state%previous) then
-             state%current = state%previous - shift
+             state%previous = state%previous - shift
           end if
         end if
       end do
@@ -591,11 +588,7 @@ contains
   !! Return index of the previous input/residual pair
   integer function adaptive_anderson_previous_index(state)
       type(adaptive_anderson_solver_state), intent(inout) :: state
-      if (state%current > 1) then
-         adaptive_anderson_previous_index = state%current -1
-      else
-         adaptive_anderson_previous_index = state%used
-      end if
+      adaptive_anderson_previous_index = state%previous
   end function
 
   !!Work routine - check collinearity in QR decomposition of residual matrix
