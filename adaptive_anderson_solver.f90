@@ -64,8 +64,6 @@ type, public :: adaptive_anderson_solver_state
   !Do not use the vector in the current iteration, if its diagonal element in the
   !R matrix of QR factorization is lower than the threshold
   real*8 :: collinearity_threshold
-  !The same as above for the purpose of the adaptation
-  real*8 :: collinearity_adaptation_threshold
 
   !regularization parameter, set to <= 0
   real*8 :: regularization_lambda
@@ -269,7 +267,6 @@ contains
        state%collinearity_threshold = 1d-10
      end if
      state%collinearity_threshold = 1d-10
-     state%collinearity_adaptation_threshold = 1d-6
 
      if ( present(regularization_lambda) ) then
        state%regularization_lambda = regularization_lambda
