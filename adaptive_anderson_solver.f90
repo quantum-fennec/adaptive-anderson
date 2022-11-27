@@ -65,7 +65,7 @@ type, public :: adaptive_anderson_solver_state
   !R matrix of QR factorization is lower than the threshold
   real*8 :: collinearity_threshold
 
-  !regularization parameter, set to <= 0
+  !regularization parameter, set to <= 0 to not to use
   real*8 :: regularization_lambda
   !adapt from iteration
   integer :: adapt_from
