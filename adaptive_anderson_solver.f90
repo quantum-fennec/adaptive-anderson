@@ -347,11 +347,10 @@ contains
 
   !!! Given result of previous iteration, return pointer to new
   !!! input
-  logical function adaptive_anderson_step(n, state, residuum, x)
-     integer, intent(in) :: n
+  logical function adaptive_anderson_step(state, residuum, x)
      type(adaptive_anderson_solver_state), intent(inout), target :: state
-     real*8, intent(in), target :: residuum(n)
-     real*8, intent(out) :: x(n)
+     real*8, intent(in), target :: residuum(state%n)
+     real*8, intent(out) :: x(state%n)
      !state%used can be shifted
      if( state%verbosity > 3) WRITE (*,*) 'AAMIX(STATE): Step start'
 

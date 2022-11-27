@@ -37,13 +37,13 @@
         state => adaptive_anderson_init(4, x0, alpha = 0.5d0)
         state%inputs(:,2:)=1d100
         state%residuals(:,1:)=1d100
-        res=adaptive_anderson_step(4,state, x0, x)
+        res=adaptive_anderson_step(state, x0, x)
         call assert(.not. res, "Not converged yet")
         call assert(state%used .eq. 2, "used must be 2")
         call assert_arr(x,x1, "first x should be 1.5" )
         !1.0 0 0 0  => 1.0 0 0 0
         !1.5 0 0 0  => ?
-        res=adaptive_anderson_step(4,state, x0, x)
+        res=adaptive_anderson_step(state, x0, x)
         call assert(.not. res, "Not converged yet 2")
         call assert(state%used .eq. 3, "used must be 3")
         !the space for the result is allready "allocated"
@@ -57,7 +57,7 @@
         x0(2) = 1
 
         state%adaptive_alpha = .false.
-        res=adaptive_anderson_step(4,state, x0,x )
+        res=adaptive_anderson_step(state, x0,x )
         !1.5 0 0 0 => 1.0 0 0 0
         !2.0 0 0 0 => 0.5 0.5 0 0
         !2.3 0.2 0 0
@@ -73,13 +73,13 @@
         x0(1) = 0.3
         x0(2) = -0.2
         x0(3) = 0.2
-        res = adaptive_anderson_step(4,state, x0,x )
+        res = adaptive_anderson_step(state, x0,x )
         x0(3) = 0.1
-        res = adaptive_anderson_step(4,state, x0,x )
+        res = adaptive_anderson_step(state, x0,x )
         x0(2) = -0.1
-        res = adaptive_anderson_step(4,state, x0,x )
+        res = adaptive_anderson_step(state, x0,x )
         x0(2) = -0.01
-        res = adaptive_anderson_step(4,state, x0,x )
+        res = adaptive_anderson_step(state, x0,x )
         call adaptive_anderson_end(state)
 
         !write (*,*) "Sanity checks"
