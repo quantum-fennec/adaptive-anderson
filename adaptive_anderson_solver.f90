@@ -207,6 +207,14 @@ contains
      end if
      state%history = 10
 
+     if ( present( tolerance )) then
+          !! negative threshold is allowed - it means no threshold (use it for your own custom
+          !! stopping criterium
+          state%tolerance = tolerance
+     else
+          state%tolerance = -1
+     end if
+
      if ( present(weights)) then
        r = 0d0
        do i=1,n
@@ -218,17 +226,11 @@ contains
         r = r + weights(i)
        end do
        state%weights =>  weights
-       if (present(norm_tolerance) .and. norm_tolerance) state%tolerance = state%tolerance * n / r
+       if (present(norm_tolerance)) then
+          if (norm_tolerance) state%tolerance = state%tolerance * n / r
+       end if
      else
        state%weights => null()
-     end if
-
-     if ( present( tolerance )) then
-          !! negative threshold is allowed - it means no threshold (use it for your own custom
-          !! stopping criterium
-          state%tolerance = tolerance
-     else
-          state%tolerance = -1
      end if
 
      if ( present(alpha) ) then
