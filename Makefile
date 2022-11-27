@@ -31,7 +31,7 @@ python: lib/libadaptive_anderson_solver.so
 python_test: python
 	${PYTHON} test/test.py
 
-test: run_test_debug run_test python_test
+test: test/test test/test_debug run_test_debug run_test python_test
 
 install: lib/libadaptive_anderson_solver.so
 	cp lib/* ${PREFIX}/lib/
