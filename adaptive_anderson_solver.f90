@@ -17,8 +17,8 @@ type, public :: adaptive_anderson_solver_state
   !OPTIONS
   !max length of history
   integer :: history
-  !desired precision - threshold for residuum norm
-  real*8 :: threshold
+  !desired accuracy - threshold for the residuum norm
+  real*8 :: tolerance
   !mixing coeficient
   real*8 :: alpha
   !adaptive change of alpha
@@ -113,9 +113,9 @@ end type adaptive_anderson_solver_state
 contains
 
   !!! Init solver
-  function adaptive_anderson_init(n, x0, history, threshold, alpha, &
+  function adaptive_anderson_init(n, x0, history, tolerance, alpha, &
                                adaptive_alpha, delta, delta_per_vector, &
-                               weights, norm_threshold, collinearity_threshold, &
+                               weights, norm_tolerance, collinearity_threshold, &
                                regularization_lambda, adapt_from, &
                                restart_threshold, &
                                b_ii_switch_to_linear, &
@@ -132,9 +132,9 @@ contains
      integer, intent(in), optional :: history
      !mixing coefficient default 0.5
      real*8, intent(in), optional :: alpha
-     !desired precision - threshold for residuum norm, default not applied.
+     !desired accuracy - threshold for residuum norm, default not applied.
      !If not applied, it is user responsibility to decide when to stop iterating.
-     real*8, intent(in), optional :: threshold
+     real*8, intent(in), optional :: tolerance
      !Adapt mixing coefficients? Default False.
      logical, intent(in), optional :: adaptive_alpha
      !Coefficients for mixing coefficient adaptation.
@@ -146,8 +146,8 @@ contains
      !(integral) weights (e.g. gauss quadrature weights) for residuum, used
      !for norm of the residuum.
      real*8, dimension(n), intent(in), optional, target :: weights
-     !Adjust precision according to sum of the weights, default False
-     logical, intent(in), optional :: norm_threshold
+     !Adjust the threshold according to sum of the weights, default False
+     logical, intent(in), optional :: norm_tolerance
      !Agresivity for removing collinear vectors
      real*8, intent(in), optional :: collinearity_threshold
      !Regularization -  lambda > 0 slows convergence, but can solve instability
@@ -221,17 +221,17 @@ contains
         r = r + weights(i)
        end do
        state%weights =>  weights
-       if (present(norm_threshold) .and. norm_threshold) state%threshold = state%threshold * n / r
+       if (present(norm_tolerance) .and. norm_tolerance) state%tolerance = state%tolerance * n / r
      else
        state%weights => null()
      end if
 
-     if ( present( threshold )) then
+     if ( present( tolerance )) then
           !! negative threshold is allowed - it means no threshold (use it for your own custom
           !! stopping criterium
-          state%threshold = threshold
+          state%tolerance = tolerance
      else
-          state%threshold = -1
+          state%tolerance = -1
      end if
 
      if ( present(alpha) ) then
@@ -365,15 +365,16 @@ contains
      end if
 
      call adaptive_anderson_store_result(state, residuum)
-     if (adaptive_anderson_check_convergence(state, state%threshold)) then
+     if (adaptive_anderson_check_convergence(state, state%tolerance)) then
         adaptive_anderson_step = .True.
+        if( state%verbosity > 3) WRITE (*,*) 'AAMIX(STATE): Step end - converged', &
+            state%matrix(state%current, state%current), state%tolerance
         call adaptive_anderson_shift_circular_buffer(state)
-        if( state%verbosity > 3) WRITE (*,*) 'AAMIX(STATE): Step end - converged'
         return
      end if
 
      if (state%restart_threshold > 0) then
-         call adaptive_anderson_implicit_restart(state, state%threshold)
+         call adaptive_anderson_implicit_restart(state, state%tolerance)
      end if
 
      call adaptive_anderson_init_order(state)
