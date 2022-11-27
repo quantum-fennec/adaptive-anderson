@@ -22,7 +22,8 @@ cdef extern from "adaptive_anderson_solver.h":
 cdef class AdaptiveAndersonSolver:
 
     cdef adaptive_anderson_solver_state* state;
-    cdef double[::1] x0;
+    cdef double[::1] x;
+
     def __init__(AdaptiveAndersonSolver self, double[::1] x0, double tolerance=1e-10,
           int history=6, double alpha=0.5, int adaptive_alpha=1, double delta=1.0,
           double delta_per_vector=0.04, double[::1] weights=None,
@@ -45,7 +46,7 @@ cdef class AdaptiveAndersonSolver:
 
           cdef int size = x0.size
 
-          self.x0 = x0
+          self.x = x
           self.state = __adaptive_anderson_solver_MOD_adaptive_anderson_init(&size, &x0[0],
                         history=&history, tolerance=&tolerance, alpha=&alpha,
                         adaptive_alpha=&adaptive_alpha, delta=&delta,
@@ -62,7 +63,9 @@ cdef class AdaptiveAndersonSolver:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef bint step(AdaptiveAndersonSolver self, double[::1] residuum, double[::1] x):
-          return __adaptive_anderson_solver_MOD_adaptive_anderson_step(self.state, &residuum[0], &x[0])
+          out = __adaptive_anderson_solver_MOD_adaptive_anderson_step(self.state, &residuum[0], &x[0])
+          self.x = x
+          return out
 
     cpdef double norm(AdaptiveAndersonSolver self):
           return __adaptive_anderson_solver_MOD_adaptive_anderson_residual_norm(self.state)
@@ -71,11 +74,10 @@ cdef class AdaptiveAndersonSolver:
           if self.state is not NULL:
              __adaptive_anderson_solver_MOD_adaptive_anderson_end(&self.state)
 
-    def solve(AdaptiveAndersonSolver self, fce):
-          x=np.copy(self.x0)
+          x=np.copy(self.x)
           try:
             while True:
-                res = fce(x)
+                res = function(x)
                 if self.step(res, x):
                     break
           except StopIteration:
