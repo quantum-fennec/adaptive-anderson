@@ -85,7 +85,7 @@ cdef class AdaptiveAndersonSolver:
           return x
 
 
-def solve(fce, double[::1] x0, double tolerance=1e-10,
+def solve(function, double[::1] x0, double tolerance=1e-10,
           int history=6, double alpha=0.5, int adaptive_alpha=1, double delta=1.0,
           double delta_per_vector=0.04, double[::1] weights=None,
           bint norm_tolerance=True,  double collinearity_threshold=1e-6,
@@ -113,4 +113,4 @@ def solve(fce, double[::1] x0, double tolerance=1e-10,
                                 restart_threshold=restart_threshold, b_ii_switch_to_linear=b_ii_switch_to_linear,
                                 linear_if_cycling=linear_if_cycling, debug_store_to_file=debug_store_to_file,
                                 verbosity=verbosity)
-    return aa.solve(fce)
+    return aa.solve(function)
