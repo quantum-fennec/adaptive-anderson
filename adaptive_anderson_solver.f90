@@ -371,7 +371,7 @@ contains
      end if
 
      call adaptive_anderson_init_order(state)
-     call adaptive_anderson_minimize_residual(state, state%solution, state%collinearity_threshold, .false.)
+     call adaptive_anderson_minimize_residual(state, state%solution, state%collinearity_threshold)
      state%solution(state%used+1:) = 0d0
      !Adaptation can solve the problem again, so remember the coefficients
 
@@ -594,67 +594,19 @@ contains
   !!Work routine - check collinearity in QR decomposition of residual matrix
   !!If the funcion found a collinear vectors (with respect to the given threshold)
   !!it removes it from the state%order and return FALSE. Otherwise, just return TRUE
-  !!The function can be called for two threshold - one for Anderson and on  for adaptation
-  logical function adaptive_anderson_check_collinearity_in_qr(state, threshold_, strict)
+  logical function adaptive_anderson_check_collinearity_in_qr(state, threshold)
       type(adaptive_anderson_solver_state), intent(inout) :: state
-      real*8 :: threshold_
-      logical :: strict
-
       real*8 :: threshold
       integer i,j,oi,oj
       real*8 norm, mnorm
 
       if (state%verbosity > 3) write (*,*) "AAMIX(STATE): Collinearity check"
-      threshold = threshold_
-      if (strict) then
-      threshold = threshold
-      do i=2,state%non_collinear
-         threshold = threshold * 1d-0
-         norm = 0
-         oi = state%order(i)
-         do j=1,state%non_collinear
-            oj = state%order(j)
-            norm =  norm + state%matrix(oi, oj)**2
-         end do
-         if( abs(state%qr_matrix(i,i)) / sqrt(norm) < threshold) then
-            if(state%verbosity > 0)  then
-              write (*,*) 'AAMIX(COL3):', abs(state%qr_matrix(i,i)), norm, threshold
-            end if
-            state%non_collinear = state%non_collinear - 1
-            state%order(i:state%non_collinear) = state%order(i+1:state%non_collinear+1)
-            adaptive_anderson_check_collinearity_in_qr = .False.
-            return
-         end if
-      end do
-      !adaptive_anderson_check_collinearity_in_qr = .True.
-      threshold = state%collinearity_threshold
-    end if
 
-    !threshold = threshold * 100
       norm = abs(state%qr_matrix(1,1))
-      mnorm = norm
-      if(state%verbosity > 0) write (*,'(A11)', advance="no") ' AAMIX(QR) '
-      if(state%verbosity > 0) write (*,'(E16.8)', advance="no") state%qr_matrix(1,1)
-
-      do i=2, state%non_collinear
-         if(state%verbosity > 0) write (*,'(E16.8)', advance="no") state%qr_matrix(i,i)
-         if (abs(state%qr_matrix(i,i)) * threshold > norm) then
-            if(state%verbosity > 0)  then
-              write (*,*)
-              write (*,*) 'AAMIX(COL2):', state%qr_matrix(i,i), norm, threshold
-            end if
-            state%non_collinear = state%non_collinear - 1
-            state%order(i:state%non_collinear) = state%order(i+1:state%non_collinear+1)
-            adaptive_anderson_check_collinearity_in_qr = .False.
-            return
-         end if
-         mnorm = max(norm, abs(state%qr_matrix(i,i)))
-      end do
-      if(state%verbosity > 0) write (*,*)
-
       mnorm = max(1d-290, norm * threshold)
       !Check for the collinear vectors
       do i=2, state%non_collinear
+         if(state%verbosity > 0) write (*,'(E16.8)', advance="no") state%qr_matrix(i,i)
          if ( abs(state%qr_matrix(i,i)) < mnorm ) then
             if(state%verbosity > 0)  write (*,*) 'AAMIX(COL):', state%qr_matrix(i,i), mnorm,  &
                                                                 state%qr_matrix(1,1), threshold
@@ -708,11 +660,10 @@ contains
   !! Solve problem defined by pulay matrix using modified gram-schmidt orthogonalization
   !! Discard the oldest vectors, that are (nearly) linear combination of other vectors
   !! So the MGS algorithm have to start with the newest ones
-  subroutine adaptive_anderson_minimize_residual(state, solution, collinearity_threshold, for_adaptation)
+  subroutine adaptive_anderson_minimize_residual(state, solution, collinearity_threshold)
       type(adaptive_anderson_solver_state), intent(inout) :: state
       real*8 :: solution(state%used)
       real*8, intent(in)  :: collinearity_threshold
-      logical :: for_adaptation
 
       real*8 :: rhs(state%used)
       real*8 :: matrix(state%used,state%used)
@@ -747,7 +698,7 @@ contains
         call check_lapack(info, "DGERQF")
 
         !If collinear vector is found, it is removed from the order and a new check is performed
-        if (.not. adaptive_anderson_check_collinearity_in_qr(state, collinearity_threshold, for_adaptation)) cycle
+        if (.not. adaptive_anderson_check_collinearity_in_qr(state, collinearity_threshold)) cycle
 
         rhs(:state%non_collinear) = 1D0
         !!! Do not use QR for solving - it is not accurate, even with pivoting
