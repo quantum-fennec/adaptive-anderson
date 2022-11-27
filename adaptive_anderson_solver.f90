@@ -467,7 +467,7 @@ contains
            if (i == state%current ) cycle
            tmp = min(tmp, sqrt(sum(((state%inputs(:,i) - x)*state%weights)**2)))
 
-           if (tmp / norm < state%alpha / 2) then
+           if (tmp / norm < state%alpha * state%linear_if_cycling) then
               if (state%verbosity >0 ) write(6,*) 'AAMIX(L2:Cycling => linear): ', i, tmp
               state%switched_to_linear = 2
               call adaptive_anderson_linear_mix(state, x)
