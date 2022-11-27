@@ -7,7 +7,7 @@ module adaptive_anderson_solver
 
 implicit none
 
-private :: check_lapack 
+private :: check_lapack
 
 !!! Holds the state of nonlinear solver
 type, public :: adaptive_anderson_solver_state
@@ -113,13 +113,11 @@ contains
   !!! Init solver
   function adaptive_anderson_init(n, x0, history, tolerance, alpha, &
                                adaptive_alpha, delta, delta_per_vector, &
-                               weights, norm_tolerance, collinearity_threshold, &
-                               regularization_lambda, adapt_from, &
+                               weights, norm_tolerance, adapt_from, &
+                               collinearity_threshold, regularization_lambda, &
                                restart_threshold, &
-                               b_ii_switch_to_linear, &
-                               linear_if_cycling, &
-                               debug_store_to_file, &
-                               verbosity &
+                               b_ii_switch_to_linear, linear_if_cycling, &
+                               debug_store_to_file, verbosity &
                                ) result(state)
      !number of unknowns
      integer, intent(in) :: n
@@ -146,12 +144,12 @@ contains
      real*8, dimension(n), intent(in), optional, target :: weights
      !Adjust the threshold according to sum of the weights, default False
      logical, intent(in), optional :: norm_tolerance
+     !Start the adaptation of alpha at the <adapt_from> iteration
+     integer, intent(in), optional :: adapt_from
      !Agresivity for removing collinear vectors
      real*8, intent(in), optional :: collinearity_threshold
      !Regularization -  lambda > 0 slows convergence, but can solve instability
      real*8, intent(in), optional :: regularization_lambda
-     !Start adaptation of alpha from the adapt_from the <adapt_from> iteration
-     integer, intent(in), optional :: adapt_from
 
      !If greater than zero, discard all the residuals (but not the last one)
      !with norm > min(residual norms) / restart_threshold

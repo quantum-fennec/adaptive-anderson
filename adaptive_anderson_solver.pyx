@@ -8,8 +8,8 @@ cdef extern from "adaptive_anderson_solver.h":
     adaptive_anderson_solver_state* __adaptive_anderson_solver_MOD_adaptive_anderson_init(int* size, double* x0,
                                int* history, double* tolerance, double* alpha,
                                int* adaptive_alpha, double* delta, double* delta_per_vector,
-                               double* weights, bint* norm_tolerance,  double* collinearity_threshold,
-                               double* regularization_lambda, int* adapt_from,
+                               double* weights, bint* norm_tolerance, int* adapt_from,
+                               double* collinearity_threshold, double* regularization_lambda,
                                double* restart_threshold, double* b_ii_switch_to_linear,
                                double* linear_if_cycling, int* debug_store_to_file,
                                int* verbosity)
@@ -23,12 +23,22 @@ cdef class AdaptiveAndersonSolver:
 
     cdef adaptive_anderson_solver_state* state;
     cdef double[::1] x0;
+    def __init__(AdaptiveAndersonSolver self, double[::1] x0, double tolerance=1e-10,
+          int history=6, double alpha=0.5, int adaptive_alpha=1, double delta=1.0,
+          double delta_per_vector=0.04, double[::1] weights=None,
+          bint norm_tolerance=True, int adapt_from=0,
+          double collinearity_threshold=1e-6,
+          double regularization_lambda=0.0,
+          double restart_threshold=0.0, double b_ii_switch_to_linear=0.0,
+          double linear_if_cycling=0.0, int debug_store_to_file=0,
+          int verbosity=0):
 
     def __cinit__(AdaptiveAndersonSolver self, double[::1] x0, double tolerance=1e-10,
           int history=6, double alpha=0.5, int adaptive_alpha=1, double delta=1.0,
           double delta_per_vector=0.04, double[::1] weights=None,
-          bint norm_tolerance=True,  double collinearity_threshold=1e-6,
-          double regularization_lambda=0.0, int adapt_from=0,
+          bint norm_tolerance=True, int adapt_from=0,
+          double collinearity_threshold=1e-6,
+          double regularization_lambda=0.0,
           double restart_threshold=0.0, double b_ii_switch_to_linear=0.0,
           double linear_if_cycling=0.0, int debug_store_to_file=0,
           int verbosity=0):
@@ -40,8 +50,8 @@ cdef class AdaptiveAndersonSolver:
                         history=&history, tolerance=&tolerance, alpha=&alpha,
                         adaptive_alpha=&adaptive_alpha, delta=&delta,
                         delta_per_vector = &delta_per_vector, weights=NULL if weights is None else &weights[0],
-                        norm_tolerance=&norm_tolerance, collinearity_threshold=&collinearity_threshold,
-                        regularization_lambda=&regularization_lambda, adapt_from=&adapt_from,
+                        norm_tolerance=&norm_tolerance, adapt_from=&adapt_from,
+                        collinearity_threshold=&collinearity_threshold, regularization_lambda=&regularization_lambda,
                         restart_threshold=&restart_threshold, b_ii_switch_to_linear=&b_ii_switch_to_linear,
                         linear_if_cycling=&linear_if_cycling, debug_store_to_file=&debug_store_to_file,
                         verbosity=&verbosity)
@@ -96,8 +106,8 @@ def solve(fce, double[::1] x0, double tolerance=1e-10,
                                 history=history, tolerance=tolerance, alpha=alpha,
                                 adaptive_alpha=adaptive_alpha, delta=delta,
                                 delta_per_vector = delta_per_vector, weights=weights,
-                                norm_tolerance=norm_tolerance, collinearity_threshold=collinearity_threshold,
-                                regularization_lambda=regularization_lambda, adapt_from=adapt_from,
+                                norm_tolerance=norm_tolerance, adapt_from=adapt_from,
+                                collinearity_threshold=collinearity_threshold, regularization_lambda=regularization_lambda,
                                 restart_threshold=restart_threshold, b_ii_switch_to_linear=b_ii_switch_to_linear,
                                 linear_if_cycling=linear_if_cycling, debug_store_to_file=debug_store_to_file,
                                 verbosity=verbosity)
