@@ -7,7 +7,7 @@ module adaptive_anderson_solver
 
 implicit none
 
-private :: check_lapack
+private :: check_lapack, anderson_pulay_remove_residual
 
 !!! Holds the state of nonlinear solver
 type, public :: adaptive_anderson_solver_state
@@ -608,10 +608,12 @@ contains
       do i=2, state%non_collinear
          if(state%verbosity > 0) write (*,'(E16.8)', advance="no") state%qr_matrix(i,i)
          if ( abs(state%qr_matrix(i,i)) < mnorm ) then
-            if(state%verbosity > 0)  write (*,*) 'AAMIX(COL):', state%qr_matrix(i,i), mnorm,  &
+            if(state%verbosity > 0)  then
+              write (*,*)
+              write (*,*) 'AAMIX(COL):', state%qr_matrix(i,i), mnorm,  &
                                                                 state%qr_matrix(1,1), threshold
-            state%non_collinear = state%non_collinear - 1
-            state%order(i:state%non_collinear) = state%order(i+1:state%non_collinear+1)
+            end if
+            call anderson_pulay_remove_residual(state, i)
             adaptive_anderson_check_collinearity_in_qr = .False.
             return
          end if
@@ -718,6 +720,11 @@ contains
         end if
 
         call dgesv(state%non_collinear, 1, matrix, state%used, pivot, rhs, state%used, info)
+        if (info > 0 ) then
+          if (info .eq. 1) info = state%non_collinear
+          call anderson_pulay_remove_residual(state, info)
+          cycle
+        end if
         call check_lapack(info, "DGESV")
 
         if (state%verbosity > 1) write (*,*) 'AAMIX(R)', rhs(:state%non_collinear)
@@ -984,15 +991,26 @@ contains
        state => null()
   end subroutine
 
+  !!! Private routines !!!
+
   !Unified handling of lapack errors
   subroutine check_lapack(info, msg)
     integer :: info
     character(len=*) :: msg
     if (info .ne. 0) then
-       write (*,*) INFO
-       write (*,*) msg
+       write (*,*) "LAPACK CALL ", msg, " FAILED WITH CODE: ", INFO
        stop 255
     end if
+  end subroutine
+
+  !Remove the given residual from the residual matrix (for this iteration)
+  subroutine anderson_pulay_remove_residual(state, i)
+       type(adaptive_anderson_solver_state), intent(inout) :: state
+       integer :: i
+       state%non_collinear = state%non_collinear - 1
+       if (i <= state%non_collinear) then
+         state%order(i:state%non_collinear) = state%order(i+1:state%non_collinear+1)
+       end if
   end subroutine
 
 
