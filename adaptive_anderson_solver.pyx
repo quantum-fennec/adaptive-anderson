@@ -121,7 +121,7 @@ cdef class AdaptiveAndersonSolver:
           if self.state is not NULL:
              __adaptive_anderson_solver_MOD_adaptive_anderson_end(&self.state)
 
-    def solve(AdaptiveAndersonSolver self, function):
+    def solve(AdaptiveAndersonSolver self, function, iterations=0):
         """
         Run (or complete) the "selfconsisten" cycle.
         Stop, when the desired precision is reached or if the StopIteration have been raised.
@@ -133,11 +133,15 @@ cdef class AdaptiveAndersonSolver:
 
         """
         x=np.copy(self.x)
+        cdef int iteration=0
         try:
           while True:
+              iteration+=1
               res = function(x)
               if self.step(res, x):
                   break
+              if iterations>0 and iteration==iterations:
+                  return x
         except StopIteration:
           pass
         return x
@@ -150,7 +154,7 @@ def solve(function, double[::1] x0, double tolerance=1e-10,
           double regularization_lambda=0.0, int adapt_from=0,
           double restart_threshold=0.0, double b_ii_switch_to_linear=0.0,
           double linear_if_cycling=0.0, int debug_store_to_file=0,
-          int verbosity=0):
+          int verbosity=0, int iterations=0):
     r"""
     Adaptive Anderson mixing algorithm
 
@@ -208,4 +212,4 @@ def solve(function, double[::1] x0, double tolerance=1e-10,
                                 restart_threshold=restart_threshold, b_ii_switch_to_linear=b_ii_switch_to_linear,
                                 linear_if_cycling=linear_if_cycling, debug_store_to_file=debug_store_to_file,
                                 verbosity=verbosity)
-    return aa.solve(function)
+    return aa.solve(function, iterations=iterations)
