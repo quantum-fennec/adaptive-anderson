@@ -810,7 +810,12 @@ contains
       histories = (/10,8,6,5/)
       solution = state%solution(:state%used)
 
-      if (state%non_collinear <= 1) return
+      if (state%non_collinear <= 1) then
+        if (state%used > 3) then
+            state%alpha = state%alpha * 3
+            return
+        end if
+      end if
 
       if (state%adaptation_changed == 0 .and. state%matrix(state%current,state%current) > state%matrix(1,1) &
                                         .and. state%iteration < state%history .and. state%iteration < 3) then
