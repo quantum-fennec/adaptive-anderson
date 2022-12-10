@@ -22,10 +22,10 @@
         double precision :: residuum(n)
 
         x = 0
-        state => adaptive_anderson_init(n, x, threshold=1d-10, history=5)
+        state => adaptive_anderson_init(n, x, tolerance=1d-10, history=5)
         do
           CALL SFC(n, x, residuum)
-          IF ( adaptive_anderson_step(n, state, residuum, x)) EXIT
+          IF ( adaptive_anderson_step(state, residuum, x)) EXIT
           WRITE (*,*) "Residual norm:", &
                       adaptive_anderson_residual_norm(state)
         end do
