@@ -4,4 +4,5 @@
 build/**
 adaptive_anderson_solver.c
 *.cpython-*
+src/*.egg-info
 lib/*

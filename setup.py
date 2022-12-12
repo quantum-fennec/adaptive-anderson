@@ -18,14 +18,24 @@ if not config:
 curdir = os.path.dirname(os.path.realpath(__file__))
 ext_modules = [ Extension(
     name="adaptive_anderson_solver",
-    sources=["adaptive_anderson_solver.pyx"],
+    sources=["src/adaptive_anderson_solver/adaptive_anderson_solver.pyx"],
     libraries=["adaptive_anderson_solver"] + config['libraries'],
-    include_dirs=[np.get_include(), os.path.dirname(__file__)],
+    include_dirs=[np.get_include(), os.path.join(curdir, 'src', 'fortran')],
     library_dirs=["./lib/"] + config['library_dirs'],
     extra_compile_args=["-O3"],
-    extra_link_args=["-Wl,-rpath,./lib:"+curdir]
+    extra_link_args=["-Wl,-rpath,$ORIGIN/adaptive_anderson_solver/:$ORIGIN/../lib:"+curdir]
 )]
 
 setup(
-    ext_modules=cythonize(ext_modules)
+    name='adaptive_anderson_solver',
+    ext_modules=cythonize(ext_modules),
+    packages = ['adaptive_anderson_solver'],
+    package_dir= { '':'src' },
+    package_data={ '': ['libadaptive_anderson_solver.so']},
+    exclude_package_data= { '': ['*.c']},
+    license='BSD',
+    author='Matyáš Novák',
+    version='1.0.0',
+    author_email = 'novakmat@fzu.cz',
+    include_package_data=True
 )

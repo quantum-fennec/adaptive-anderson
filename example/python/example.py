@@ -1,11 +1,12 @@
 import sys
 import os
 
-""" Add path to the compiled module to the sys.path"""
+""" Add path to the compiled module to the sys.path. This is not necessary,
+if the package is installed (e.g. make  """
 path = os.path.realpath(__file__)
 for i in range(3):
     path = os.path.dirname(path)
-sys.path.insert(0, path)
+sys.path.insert(0, os.path.join(path, 'src'))
 
 import adaptive_anderson_solver
 import numpy as np
