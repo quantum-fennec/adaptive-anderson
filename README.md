@@ -4,7 +4,7 @@ Adaptive Anderson Mixing - a modification of the well known
 Anderson algorithm for solving large non-linear root finding
 problems.
 This adaptive version automatically adjust the mixing parameter
-to achieve a better convergence.
+during iterations to achieve a better convergence.
 
 For more informations about the package and its use, please read the paper
 in the doc directory. To make the program, modify Makefile.inc
@@ -15,3 +15,12 @@ and run
 If the build suceeds, the library to be linked will appear in the lib subdirectory.
 
 For Python programmers, a Cython wrapper for the package is included.
+Run
+
+		make python
+
+to compile the wrapper inplace (will be placed in the src directory), or
+
+		make python_install
+
+to install the package.
