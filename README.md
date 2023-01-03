@@ -23,4 +23,7 @@ to compile the wrapper inplace (will be placed in the src directory), or
 
 		make python_install
 
-to install the package.
+to install the package. For the "editable installation" of the python package,
+i.e. the installation that uses the source directory, you can run
+
+		make python_editable_install

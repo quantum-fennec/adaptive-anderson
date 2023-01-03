@@ -3,6 +3,10 @@ from Cython.Build import cythonize
 import numpy as np
 import os.path
 
+import sys
+import site
+site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
+
 try:
   import numpy.distutils.system_info as np_config
 except ImportError:
@@ -20,8 +24,15 @@ ext_modules = [ Extension(
     name="adaptive_anderson_solver",
     sources=["src/adaptive_anderson_solver/adaptive_anderson_solver.pyx"],
     libraries=["adaptive_anderson_solver"] + config['libraries'],
-    include_dirs=[np.get_include(), os.path.join(curdir, 'src', 'fortran')],
-    library_dirs=["./lib/"] + config['library_dirs'],
+    include_dirs=[
+      np.get_include(),
+      os.path.join(curdir, 'src', 'fortran'),
+      os.path.join(curdir),
+      ],
+    library_dirs=[
+      "./lib/",
+      os.path.join(curdir, 'src', 'adaptive_anderson_solver'),
+      ] + config['library_dirs'],
     extra_compile_args=["-O3"],
     extra_link_args=["-Wl,-rpath,$ORIGIN/adaptive_anderson_solver/:$ORIGIN/../lib:"+curdir]
 )]

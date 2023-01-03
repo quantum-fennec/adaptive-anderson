@@ -28,8 +28,11 @@ run_test_debug: test/test_debug
 	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):./lib  test/test_debug
 
 python: lib/libadaptive_anderson_solver.so
-	#${PYTHON} setup.py build_ext --inplace
-	pip install -e .
+	pip install -r requirements.txt
+	${PYTHON} setup.py build_ext --inplace
+
+python_edit_install:
+	pip install --user -e .
 
 python_test: python
 	${PYTHON} test/test.py
@@ -46,4 +49,4 @@ fortran_install: lib/libadaptive_anderson_solver.so
 python_install: lib/libadaptive_anderson_solver.so
 	pip install .
 
-.PHONY: test lib python_install fortran_install fortran_test python_test python fortran clean
+.PHONY: test lib python_install fortran_install fortran_test python_test python fortran clean python_edit_install
