@@ -31,7 +31,7 @@ python: lib/libadaptive_anderson_solver.so
 	pip install -r requirements.txt
 	${PYTHON} setup.py build_ext --inplace
 
-python_edit_install:
+python_editable_install:
 	pip install --user -e .
 
 python_test: python
