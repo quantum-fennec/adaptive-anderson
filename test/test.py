@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 def test():
-    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src'))
     import adaptive_anderson_solver
 
     brk=0
