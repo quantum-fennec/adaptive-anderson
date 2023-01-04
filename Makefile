@@ -22,10 +22,10 @@ test/test_debug: test/test.f90 lib/libadaptive_anderson_solver_debug.so
 	${FC} test/test.f90 -L./lib -Isrc/fortran -ladaptive_anderson_solver $(LAPACK) -o test/test_debug ${DEBUG_OPTS}
 
 run_test: test/test
-	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):./lib  test/test
+	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):./lib  test/test > /dev/null
 
 run_test_debug: test/test_debug
-	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):./lib  test/test_debug
+	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):./lib  test/test_debug > /dev/null
 
 python: lib/libadaptive_anderson_solver.so
 	pip install -r requirements.txt
@@ -35,7 +35,7 @@ python_editable_install:
 	pip install --user -e .
 
 python_test: python
-	${PYTHON} test/test.py
+	${PYTHON} test/test.py > /dev/null
 
 test: fortran_test python_test
 
