@@ -4,6 +4,8 @@ cimport numpy as np
 import numpy as np
 import cython
 
+version = "1.0.0"
+
 cdef extern from "adaptive_anderson_solver.h":
     ctypedef void adaptive_anderson_solver_state;
 
