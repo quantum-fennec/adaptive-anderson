@@ -1,32 +1,36 @@
-#ADAPTIVE ANDERSON SOLVER
-This software package provides a fortran implementation of
-Adaptive Anderson Mixing - a modification of the well known
-Anderson algorithm for solving large non-linear root finding
-problems.
-This adaptive version automatically adjust the mixing parameter
-during iterations to achieve a better convergence.
+# ADAPTIVE ANDERSON SOLVER
 
-For more informations about the package and its use, please read the paper
-in the doc directory. To make the program, modify Makefile.inc
-and run
+This software package provides a Fortran implementation of Adaptive Anderson
+Mixing - a modification of the well known Anderson algorithm for solving large
+non-linear root finding problems. This adaptive version automatically adjusts
+the mixing parameter during iterations to achieve a better convergence.
+
+The Anderson algorithm is commonly used e.g. in the iterative search for a
+self-consistent charge density (or potential) whithin the DFT
+(density-functional theory) electronic structure calculations. For more
+information about the package and its use, consult the paper in the doc
+directory.
+
+To build the program, check/modify Makefile.inc and run
 
     make
 
-If the build suceeds, the library to be linked will appear in the lib subdirectory.
+If the build succeeds, the library to be linked will appear in the lib
+subdirectory.
 
-For Python programmers, a Cython wrapper for the package is included.
-Run
+For Python programmers, a Cython wrapper for the package is included. It should
+be already compiled in-place by the above "make" command. Run
 
-		make python
+    make python
 
-to compile the wrapper inplace (will be placed in the src directory), or
+to compile the wrapper in-place (will be placed in the src directory), or
 
-		make python_install
+    make python_install
 
-to install the package. For the "editable installation" of the python package,
-i.e. the installation that uses the source directory, you can run
+to install the Python package. For the "editable installation" of the Python
+package, i.e. the installation that uses the source directory, run
 
-		make python_editable_install
+    make python_editable_install
 
 ## Example Applications
 
