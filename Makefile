@@ -5,7 +5,7 @@ all: fortran python
 fortran: lib fortran_test
 
 clean:
-	rm -rf dist *.mod lib/* test/test test/test_debug src/fortran/*.mod build example/*/example *.pyc src/*.cpython-* adaptive_anderson_solver.c src/*.egg-info
+	rm -rf dist *.mod lib/* test/test test/test_debug src/fortran/*.mod build example/*/example *.pyc src/*.cpython-* src/adaptive_anderson_solver/adaptive_anderson_solver.c src/*.egg-info
 
 lib: lib/libadaptive_anderson_solver.so
 
@@ -39,7 +39,7 @@ python_test: python
 
 test: fortran_test python_test
 
-fortran_test: lib test/test test/test_debug run_test_debug run_test python_test
+fortran_test: lib test/test test/test_debug run_test_debug run_test
 
 install: fortran_install python_install
 
