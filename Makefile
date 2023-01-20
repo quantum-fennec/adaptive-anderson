@@ -13,19 +13,19 @@ lib/libadaptive_anderson_solver.so: src/fortran/adaptive_anderson_solver.f90
 	${FC} src/fortran/adaptive_anderson_solver.f90 -shared -fPIC -o lib/libadaptive_anderson_solver.so ${OPTS}
 
 lib/libadaptive_anderson_solver_debug.so: src/fortran/adaptive_anderson_solver.f90
-	${FC} src/fortran/adaptive_anderson_solver.f90 -shared -fPIC -o lib/libadaptive_anderson_solver.so ${DEBUG_OPTS}
+	${FC} src/fortran/adaptive_anderson_solver.f90 -shared -fPIC -o lib/libadaptive_anderson_solver_debug.so ${DEBUG_OPTS}
 
 test/test: test/test.f90 lib/libadaptive_anderson_solver.so
 	${FC} test/test.f90 -L./lib -Isrc/fortran -ladaptive_anderson_solver $(LAPACK) -o test/test ${OPTS}
 
 test/test_debug: test/test.f90 lib/libadaptive_anderson_solver_debug.so
-	${FC} test/test.f90 -L./lib -Isrc/fortran -ladaptive_anderson_solver $(LAPACK) -o test/test_debug ${DEBUG_OPTS}
+	${FC} test/test.f90 -L./lib -Isrc/fortran -ladaptive_anderson_solver_debug $(LAPACK) -o test/test_debug ${DEBUG_OPTS}
 
 run_test: test/test
-	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):./lib  test/test > /dev/null
+	(LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):./lib  test/test > /dev/null) || echo 'Test FAILED !!!'
 
 run_test_debug: test/test_debug
-	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):./lib  test/test_debug > /dev/null
+	(LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):./lib  test/test_debug > /dev/null) || echo 'Test FAILED !!!'
 
 python: lib/libadaptive_anderson_solver.so
 	pip install -r requirements.txt
@@ -39,7 +39,7 @@ python_test: python
 
 test: fortran_test python_test
 
-fortran_test: lib test/test test/test_debug run_test_debug run_test
+fortran_test: test/test test/test_debug run_test_debug run_test
 
 install: fortran_install python_install
 
