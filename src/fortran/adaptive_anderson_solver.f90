@@ -210,6 +210,10 @@ contains
      if ( present( tolerance )) then
           !! negative threshold is allowed - it means no threshold (use it for your own custom
           !! stopping criterium
+          if ( isnan(tolerance) ) then
+            WRITE (*,*) 'Tolerance can not be NaN'
+            ok = .False.
+          end if
           state%tolerance = tolerance
      else
           state%tolerance = -1
@@ -234,6 +238,11 @@ contains
      end if
 
      if ( present(alpha) ) then
+       if ( isnan(alpha) ) then
+            WRITE (*,*) 'Alpha can not be NaN'
+            ok = .False.
+       end if
+
        if (alpha <= 0d0 ) then
           WRITE (*,*) 'Alpha should be positive, it is actually:', alpha
           ok = .False.
@@ -251,18 +260,30 @@ contains
      end if
 
      if ( present(delta) ) then
+       if ( isnan(delta) ) then
+            WRITE (*,*) 'Delta can not be NaN'
+            ok = .False.
+       end if
        state%delta = delta
      else
        state%delta = 1.0
      end if
 
      if ( present(delta_per_vector) ) then
+       if ( isnan(delta_per_vector) ) then
+            WRITE (*,*) 'Delta_per_vector can not be NaN'
+            ok = .False.
+       end if
        state%delta_per_vector = delta_per_vector
      else
        state%delta_per_vector = 0.005
      end if
 
      if ( present(collinearity_threshold) ) then
+       if ( isnan(collinearity_threshold) ) then
+            WRITE (*,*) 'Collinearity_threshold can not be NaN'
+            ok = .False.
+       end if
        state%collinearity_threshold = collinearity_threshold
      else
        state%collinearity_threshold = 1d-10
@@ -270,6 +291,10 @@ contains
      state%collinearity_threshold = 1d-10
 
      if ( present(regularization_lambda) ) then
+       if ( isnan(regularization_lambda) ) then
+            WRITE (*,*) 'Regularization_lambda can not be NaN'
+            ok = .False.
+       end if
        state%regularization_lambda = regularization_lambda
      else
        state%regularization_lambda = 0d0
@@ -282,6 +307,10 @@ contains
      end if
 
      if (present(restart_threshold) ) then
+       if ( isnan(restart_threshold) ) then
+            WRITE (*,*) 'Restart_threshold can not be NaN'
+            ok = .False.
+       end if
        state%restart_threshold = restart_threshold
      else
        state%restart_threshold = 0d0

@@ -30,6 +30,7 @@
 
         logical :: res
         integer :: i
+        double precision :: d
 
         x0 = 0.
         x0(1) = 1
@@ -94,5 +95,29 @@
         x0(2) = -1
         call assert(.not. associated(adaptive_anderson_init(4,x0, &
              weights=x0)), "Sanity check of the weights arg. failed")
+
+        d = 0d0
+        call assert(.not. associated(adaptive_anderson_init(4,x0, &
+             restart_threshold=d/d)), &
+             "Sanity check of the NaN restart_threshold arg. failed")
+        call assert(.not. associated(adaptive_anderson_init(4,x0, &
+             collinearity_threshold=d/d)), &
+           "Sanity check of the NaN collinearity_threshold arg. failed")
+        call assert(.not. associated(adaptive_anderson_init(4,x0, &
+             alpha=d/d)), &
+             "Sanity check of the NaN alpha arg. failed")
+        call assert(.not. associated(adaptive_anderson_init(4,x0, &
+             delta=d/d)), &
+             "Sanity check of the NaN delta arg. failed")
+        call assert(.not. associated(adaptive_anderson_init(4,x0, &
+             delta=d/d)), &
+             "Sanity check of the NaN delta arg. failed")
+        call assert(.not. associated(adaptive_anderson_init(4,x0, &
+            regularization_lambda=d/d)), &
+            "Sanity check of the NaN regularization_lambda arg. failed")
+         call assert(.not. associated(adaptive_anderson_init(4,x0, &
+             tolerance=d/d)), &
+             "Sanity check of the NaN tolerance arg. failed")
+
         write (*,*) "All tests are ok"
       end
