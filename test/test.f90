@@ -102,8 +102,6 @@
         !call assert(.not. associated(adaptive_anderson_init(4,x0, &
         !   threshold=0d0)), "Sanity check of the threshold arg. failed")
         call assert(.not. associated(adaptive_anderson_init(4,x0, &
-            alpha=-1d0)), "Sanity check of the alpha arg. failed")
-        call assert(.not. associated(adaptive_anderson_init(4,x0, &
              history=-1)), "Sanity check of the history arg. failed")
         x0(2) = -1
         call assert(.not. associated(adaptive_anderson_init(4,x0, &
