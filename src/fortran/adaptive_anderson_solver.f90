@@ -235,7 +235,7 @@ contains
 !!     integer, intent(in), optional :: verbosity
      integer, intent(in), optional :: verbosity
 
-     character(len=*, kind=C_char), intent(in), optional :: read_from_file
+     character(len=*), intent(in), optional :: read_from_file
      integer, intent(in), optional :: read_from_file_desc
 
 
@@ -426,26 +426,6 @@ contains
      state%adjusted_at_iteration = 0
 
      state%verbosity=9
-     state%delta = 0.95
-     state%delta_per_vector = 0.0
-     state%delta_gap=0.15
-     write (*,*) state%delta, state%delta_gap
-
-     !CUSTOM SETTINGS
-     !REMOVE
-     !state%verbosity=6
-     !state%discard_first=0
-     !state%history=40
-     !state%choose_worst=20
-     !state%forgot_from=6
-     !state%forgot_first=1
-     !state%broyden_each=2
-     !state%adaptive_alpha=.true.
-
-     !state%weights => null()
-     !state%discard_first = 1
-     !state%broyden_each = 1
-
      if (present(read_from_file)) then
         if (read_from_file .ne. "") then
           i = merge(read_from_file_desc, 1998, present(read_from_file_desc))
@@ -456,7 +436,6 @@ contains
      end if
 
      if (state%verbosity > 0) then
-        call adaptive_anderson_write_config(state, stdout)
         call adaptive_anderson_write_config(state, stdout, 'AAMIX(CONF) ')
      end if
 
@@ -921,12 +900,9 @@ contains
       norm = abs(state%qr_matrix(1,1))
       mnorm = max(1d-290, norm * threshold)
       !Check for the collinear vectors
-      do j=2, state%non_collinear
-         i=state%order(j)
+      do i=2, state%non_collinear
          if(state%verbosity > 0) write (*,'(E16.8)', advance="no") state%qr_matrix(i,i)
          if ( abs(state%qr_matrix(i,i)) < mnorm ) then
-            write (*,*) 'AAMIX(L):', state%qr_matrix(i,:)
-            write (*,*) 'AAMIX(L):', state%qr_matrix(:,i)
             if(state%verbosity > 0)  then
               write (*,*)
               write (*,*) 'AAMIX(COL):', state%qr_matrix(i,i), mnorm,  &
@@ -1109,15 +1085,6 @@ contains
                if (solution(state%order(i)) <  0 .and. abs(solution(state%order(i))) < coef ) then
                   r = r - solution(state%order(i)) * max(0d0, state%matrix(state%order(i), state%current)) / &
                   sqrt(state%matrix(state%order(i), state%order(i))*state%matrix(state%current, state%current))
-                  !if ( r > coef .and.( state%last_adapt_coef <= 1.2 .or. state%adaptation_delayed == 1 ) ) then
-                  !   if (state%verbosity > 0) write (*,*) 'AAMIX(NA 6) - no adaptation', coef, solution(state%order(i))
-                  !   if (state%no_adaptation == 6) then
-                  !       coef = coef ** 0.5
-                  !   else
-                  !       ok = 6
-                  !       return
-                  !   end if
-                  !end if
               end if
          end do
          if (r > 0 .and. coef < state%desired_alpha) then

@@ -83,6 +83,19 @@
         res = adaptive_anderson_step(state, x0,x )
         call adaptive_anderson_end(state)
 
+        INQUIRE(FILE="input.in", EXIST=res)
+        if (res) then
+            state => adaptive_anderson_init(4, x0, alpha = 0.5d0, read_from_file='input.in')
+        else
+            INQUIRE(FILE="test/input.in", EXIST=res)
+            if (res) then
+                state => adaptive_anderson_init(4, x0, alpha = 0.5d0, read_from_file='test/input.in')
+            else
+                WRITE (*,*) "Test read from file skipped, run it from the library root or the test directory"
+            end if
+        end if
+        call adaptive_anderson_end(state)
+
         !write (*,*) "Sanity checks"
 
         !Negative threshold is allowed

@@ -3,6 +3,7 @@
 cimport numpy as np
 import numpy as np
 import cython
+from libc.stdio cimport printf
 
 version = "1.0.0"
 
@@ -12,15 +13,22 @@ cdef extern from "adaptive_anderson_solver.h":
     adaptive_anderson_solver_state* __adaptive_anderson_solver_MOD_adaptive_anderson_init(int* size, double* x0,
                                int* history, double* tolerance, double* alpha,
                                int* adaptive_alpha, double* delta, double* delta_per_vector,
+                               double* delta_gap,
                                double* weights, bint* norm_tolerance, int* adapt_from,
                                double* collinearity_threshold, double* regularization_lambda,
                                double* restart_threshold, double* b_ii_switch_to_linear,
-                               double* linear_if_cycling, int* debug_store_to_file,
-                               int* verbosity)
+                               double* linear_if_cycling,
+                               int *discard_first, int *forgot_first, int *forgot_from,
+                               int *broyden_each, int *choose_worst,
+                               int* debug_store_to_file, int* verbosity,
+                               const char* read_from_file,
+                               int* read_from_file_desc,
+                               int read_from_file_length
+                              ) nogil
 
-    int __adaptive_anderson_solver_MOD_adaptive_anderson_step(adaptive_anderson_solver_state* state, double* residuum, double* x)
-    void __adaptive_anderson_solver_MOD_adaptive_anderson_end(adaptive_anderson_solver_state** state)
-    cdef double __adaptive_anderson_solver_MOD_adaptive_anderson_residual_norm(adaptive_anderson_solver_state* state)
+    int __adaptive_anderson_solver_MOD_adaptive_anderson_step(adaptive_anderson_solver_state* state, double* residuum, double* x) nogil
+    void __adaptive_anderson_solver_MOD_adaptive_anderson_end(adaptive_anderson_solver_state** state) nogil
+    cdef double __adaptive_anderson_solver_MOD_adaptive_anderson_residual_norm(adaptive_anderson_solver_state* state) nogil
 
 cdef class AdaptiveAndersonSolver:
     """
@@ -31,14 +39,18 @@ cdef class AdaptiveAndersonSolver:
     cdef double[::1] x;
 
     def __init__(AdaptiveAndersonSolver self, double[::1] x0, double tolerance=1e-10,
-          int history=6, double alpha=0.5, int adaptive_alpha=1, double delta=1.0,
-          double delta_per_vector=0.04, double[::1] weights=None,
+          int history=10, double alpha=0.5, int adaptive_alpha=1, double delta=0.95,
+          double delta_per_vector=0.00, double delta_gap=0.15,
+          double[::1] weights=None,
           bint norm_tolerance=True, int adapt_from=0,
-          double collinearity_threshold=1e-6,
+          double collinearity_threshold=1e-10,
           double regularization_lambda=0.0,
           double restart_threshold=0.0, double b_ii_switch_to_linear=0.0,
-          double linear_if_cycling=0.0, int debug_store_to_file=0,
-          int verbosity=0):
+          double linear_if_cycling=0.0,
+          int discard_first=0, int forgot_first=0, int forgot_from=0,
+          int broyden_each=0, int choose_worst=0,
+          int debug_store_to_file=0, int verbosity=0,
+          str read_from_file='', int read_from_file_desc=0):
           r"""
           x0: np.ndarray[dtype=double]
               The array containing the initial guess $\rho^{\textrm{in}}_0$
@@ -81,27 +93,46 @@ cdef class AdaptiveAndersonSolver:
           """
 
     def __cinit__(AdaptiveAndersonSolver self, double[::1] x0, double tolerance=1e-10,
-          int history=6, double alpha=0.5, int adaptive_alpha=1, double delta=1.0,
-          double delta_per_vector=0.04, double[::1] weights=None,
+          int history=10, double alpha=0.5, int adaptive_alpha=1, double delta=0.95,
+          double delta_per_vector=0.00, double delta_gap=0.15,
+          double[::1] weights=None,
           bint norm_tolerance=True, int adapt_from=0,
-          double collinearity_threshold=1e-6,
+          double collinearity_threshold=1e-10,
           double regularization_lambda=0.0,
           double restart_threshold=0.0, double b_ii_switch_to_linear=0.0,
-          double linear_if_cycling=0.0, int debug_store_to_file=0,
-          int verbosity=0):
+          double linear_if_cycling=0.0,
+          int discard_first=0, int forgot_first=0, int forgot_from=0,
+          int broyden_each=0, int choose_worst=0,
+          int debug_store_to_file=0, int verbosity=0,
+          str read_from_file='', int read_from_file_desc=0):
 
           cdef int size = x0.size
+          cdef char* rff=NULL;
+          cdef bytes rffb;
+          cdef int rffl=0;
+
+          if read_from_file is not None and len(read_from_file):
+             rffb = bytes(read_from_file, encoding='utf8')
+             rff=rffb
+             rffl = len(rffb)
 
           self.x = x0
-          self.state = __adaptive_anderson_solver_MOD_adaptive_anderson_init(&size, &x0[0],
+          with nogil:
+            self.state = __adaptive_anderson_solver_MOD_adaptive_anderson_init(&size, &x0[0],
                         history=&history, tolerance=&tolerance, alpha=&alpha,
                         adaptive_alpha=&adaptive_alpha, delta=&delta,
-                        delta_per_vector = &delta_per_vector, weights=NULL if weights is None else &weights[0],
+                        delta_per_vector = &delta_per_vector, delta_gap = &delta_gap,
+                        weights=NULL if weights is None else &weights[0],
                         norm_tolerance=&norm_tolerance, adapt_from=&adapt_from,
                         collinearity_threshold=&collinearity_threshold, regularization_lambda=&regularization_lambda,
-                        restart_threshold=&restart_threshold, b_ii_switch_to_linear=&b_ii_switch_to_linear,
-                        linear_if_cycling=&linear_if_cycling, debug_store_to_file=&debug_store_to_file,
-                        verbosity=&verbosity)
+                        restart_threshold=&restart_threshold, b_ii_switch_to_linear=&b_ii_switch_to_linear, linear_if_cycling=&linear_if_cycling,
+                        discard_first=&discard_first, forgot_first=&forgot_first, forgot_from=&forgot_from,
+                        broyden_each=&broyden_each, choose_worst=&choose_worst,
+                        debug_store_to_file=&debug_store_to_file,
+                        verbosity=&verbosity, read_from_file=rff,
+                        read_from_file_desc=&read_from_file_desc,
+                        read_from_file_length=rffl
+                        )
 
           if not self.state:
               raise ValueError('Illegal arguments passed to the Adaptive Anderson solver constructor')
@@ -109,7 +140,8 @@ cdef class AdaptiveAndersonSolver:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef bint step(AdaptiveAndersonSolver self, double[::1] residuum, double[::1] x):
-          out = __adaptive_anderson_solver_MOD_adaptive_anderson_step(self.state, &residuum[0], &x[0])
+          with nogil:
+            out = __adaptive_anderson_solver_MOD_adaptive_anderson_step(self.state, &residuum[0], &x[0])
           self.x = x
           return out
 
@@ -150,13 +182,17 @@ cdef class AdaptiveAndersonSolver:
 
 
 def solve(function, double[::1] x0, double tolerance=1e-10,
-          int history=6, double alpha=0.5, int adaptive_alpha=1, double delta=1.0,
-          double delta_per_vector=0.04, double[::1] weights=None,
-          bint norm_tolerance=True,  double collinearity_threshold=1e-6,
+          int history=10, double alpha=0.5, int adaptive_alpha=1, double delta=0.95,
+          double delta_per_vector=0.00, double delta_gap=0.15,
+          double[::1] weights=None, bint norm_tolerance=True,  double collinearity_threshold=1e-10,
           double regularization_lambda=0.0, int adapt_from=0,
           double restart_threshold=0.0, double b_ii_switch_to_linear=0.0,
-          double linear_if_cycling=0.0, int debug_store_to_file=0,
-          int verbosity=0, int iterations=0):
+          double linear_if_cycling=0.0,
+          int discard_first=0, int forgot_first=0, int forgot_from=0,
+          int broyden_each=0, int choose_worst=0,
+          int debug_store_to_file=0, int verbosity=0,
+          str read_from_file='', int read_from_file_desc=0,
+          int iterations=0):
     r"""
     Adaptive Anderson mixing algorithm
 
@@ -208,10 +244,13 @@ def solve(function, double[::1] x0, double tolerance=1e-10,
     cdef AdaptiveAndersonSolver aa = AdaptiveAndersonSolver(x0,
                                 history=history, tolerance=tolerance, alpha=alpha,
                                 adaptive_alpha=adaptive_alpha, delta=delta,
-                                delta_per_vector = delta_per_vector, weights=weights,
-                                norm_tolerance=norm_tolerance, adapt_from=adapt_from,
+                                delta_per_vector = delta_per_vector, delta_gap =delta_gap,
+                                weights=weights, norm_tolerance=norm_tolerance, adapt_from=adapt_from,
                                 collinearity_threshold=collinearity_threshold, regularization_lambda=regularization_lambda,
                                 restart_threshold=restart_threshold, b_ii_switch_to_linear=b_ii_switch_to_linear,
-                                linear_if_cycling=linear_if_cycling, debug_store_to_file=debug_store_to_file,
-                                verbosity=verbosity)
+                                linear_if_cycling=linear_if_cycling,
+                                discard_first=discard_first,forgot_first=forgot_first,forgot_from=forgot_from,
+                                broyden_each=broyden_each, choose_worst=choose_worst,
+                                debug_store_to_file=debug_store_to_file,
+                                verbosity=verbosity, read_from_file=read_from_file, read_from_file_desc=read_from_file_desc)
     return aa.solve(function, iterations=iterations)

@@ -11,7 +11,7 @@ def test():
     def fce(x):
         nonlocal iterations
         iterations += 1
-        fce = lambda x,y: [x**2-10+y, y**2-5]
+        fce = lambda x,y: [min(x**2, abs(x)*10)-10+y, min((y**2),abs(y)*10)-5]
         if brk:
            print()
            print(x, ':', fce(*x))
@@ -30,7 +30,7 @@ def test():
     assert iterations < num_it
 
     iterations = 0
-    out=adaptive_anderson_solver.solve(fce, np.array([4.,4]), adapt_from=10, tolerance=1e-3)
+    out=adaptive_anderson_solver.solve(fce, np.array([4.,4]), adapt_from=10, tolerance=1e-3, iterations=num_it+1)
     assert iterations > num_it
 
     iterations = 0
@@ -55,7 +55,9 @@ def test():
     while not aa.step(fce(x),x):
         pass
     assert np.linalg.norm(fce(x))< 1e-5
+    aa=adaptive_anderson_solver.solve(fce, np.array([4.,4]), tolerance=1e-5, iterations=20, history=1)
 
+    aa=adaptive_anderson_solver.solve(fce, np.array([4.,4]), tolerance=1e-5, iterations=20, history=1, read_from_file=os.path.join(os.path.dirname(__file__), 'input.in'))
 
 if __name__ == "__main__":
     test()
