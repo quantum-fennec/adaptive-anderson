@@ -15,7 +15,7 @@ private :: check_lapack, anderson_pulay_remove_residual, &
            read_int, read_float, read_bool, &
            write_int, write_float, write_bool
 
-!!! Holds the state of nonlinear solver
+!!! Object of this class holds the state of nonlinear solver
 type, public :: adaptive_anderson_solver_state
    !dimension of solved problem
    integer :: n
@@ -124,29 +124,44 @@ type, public :: adaptive_anderson_solver_state
   real*8 :: desired_alpha
   !diagnostic  values
   real*8 :: last_bii
+  !solution (mixing coefficients) from the current iteration
   real*8, allocatable :: solution(:)
+  !solution from the previous iteration
   real*8, allocatable :: previous_solution(:)
+  !the adaptation coefficient from the previous iteration
   real*8 :: last_adapt_coef
-  integer :: adaptation_delayed
+  !the number of lowering and enlarging of the coefficient
   integer :: adaptation_count(2)
+  !the last iteration when the adaptation occured have been...
   integer :: adapted_in_iteration
+  !in the n last iterations the direction of the adaptation
+  !(either lowering or enlarging) have been changed (the adaptation
+  !oscillates)
   integer :: direction_changed
+  !in the n last iterations the direction of the adaptation
   integer :: direction_unchanged
+  !the alpha from the previous iteration
   real*8 :: last_alpha
+  !minimal and maximax alphas in the last set of `minimal_alpha_from`
+  !iterations
   real*8 :: minimal_alpha(2)
+  !buffer for storing minimal and maximal alpha for the current set of
+  !minimal_alpha_from iterations
   real*8 :: new_minimal_alpha(2)
+  !the iterations are divided by set of N iterations, in each set the
+  !mixing coefficient is bounded by the minima and maxima from the previous
+  !set.
   integer :: minimal_alpha_from
-
-
+  !The regularization have been performed in the iteration `adjusted_at_iteration`
+  !The next regularization affect only the newer incoming residuals.
   integer :: adjusted_at_iteration
-
 end type adaptive_anderson_solver_state
 
-  real*8, external :: ddot
+real*8, external :: ddot
 
 contains
 
-  !!! Init solver
+  !!! Init the solver and set its parameters.
   function adaptive_anderson_init(n, x0, history, tolerance, alpha, &
                                adaptive_alpha, delta, delta_per_vector, &
                                delta_gap, &
@@ -232,14 +247,15 @@ contains
      integer, intent(in), optional :: debug_store_to_file
 
      ! > 0 : print some debug messages
-!!     integer, intent(in), optional :: verbosity
      integer, intent(in), optional :: verbosity
 
+     ! If it is set, the given file is opened and the parameters are
+     ! readed from the file. Useful for easy implementation of mixing
+     ! into a "foreign" code.
      character(len=*), intent(in), optional :: read_from_file
+     ! The descriptor used for reading the file (use, if the default
+     ! one causes a conflict)
      integer, intent(in), optional :: read_from_file_desc
-
-
-
      !---- end of the arguments
 
      integer i
@@ -418,7 +434,6 @@ contains
         open(unit=state%debug_store_to_file+1, file='and_residuals.data')
         write (state%debug_store_to_file,*) x0
      end if
-     state%adaptation_delayed = 2
      state%direction_changed = 0
      state%direction_unchanged = 0
      state%adapted_in_iteration = 0
@@ -465,16 +480,20 @@ contains
 
      state%verbosity = 6
      if( state%verbosity > 3) WRITE (*,*) 'AAMIX(STATE): Initialization finished'
-
-
   end function
 
+  !!! Return the norm for the current residuum
+  !!! (useful for implementations, that does not link the module
+  !!! and so does not have an access into the state structure)
   function adaptive_anderson_residual_norm(state)
     real*8 adaptive_anderson_residual_norm
     type(adaptive_anderson_solver_state), intent(in) :: state
     adaptive_anderson_residual_norm = sqrt(state%matrix(state%previous, state%previous))
   end function
 
+  !!! Performs regularization of the (so far) unregularized residuals
+  !!! Mainly internal routine; however, you can call the routine, e.g. if
+  !!! there is some substantial change in the input.
   subroutine adaptive_anderson_adaptation_regularization(state)
     type(adaptive_anderson_solver_state) :: state
     integer i,j
@@ -611,9 +630,8 @@ contains
   end subroutine
 
 
-  !Working routine - form from the solution the new input value
+  !Internal routine - form from the solution the new input value
   !Switching to linear mixing, if the critera are met
-
   subroutine adaptive_anderson_form_new_input(state, coefficients, x)
      type(adaptive_anderson_solver_state), intent(inout) :: state
      real*8, intent(in) :: coefficients(:)
@@ -671,7 +689,7 @@ contains
      call dcopy(state%n, x, 1, state%inputs(1,state%current), 1)
   end subroutine
 
-  !Working routine - shift the internal counter to the new iteration
+  !Internal routine - shift the internal counter to the new iteration
   !If a residuum (or more of them) have been removed in the middle of the
   !buffer, shift them accordingly. However, in this version of the code,
   !there is only soft removals (only for given iterations, not from the
@@ -746,6 +764,8 @@ contains
       state%iteration = state%iteration + 1
   end subroutine
 
+  !!! Internal routine - store the residuum to the internal
+  !!! state of the solver and compute some needed quantities
   subroutine adaptive_anderson_store_result(state, residuum)
       type(adaptive_anderson_solver_state), intent(inout) :: state
       real*8, intent(in), target :: residuum(state%n)
@@ -795,6 +815,7 @@ contains
       end if
   end subroutine
 
+  !!! Compute Broyden 2 update in the terms of mixing coefficients
   subroutine adaptive_anderson_broyden_update(state, solution)
       !Solves Anderson-like mixing coefficients for the Broyden2 update
       type(adaptive_anderson_solver_state), intent(inout) :: state
@@ -804,9 +825,9 @@ contains
       integer nupdates
       real tmp
 
-      !We use non_collinear, since some densities can be 
+      !We use non_collinear, since some densities can be
       !forgotten
-      nupdates = state%non_collinear - 1 
+      nupdates = state%non_collinear - 1
       mat = 0
 
       oio = state%order(state%non_collinear)
@@ -839,9 +860,6 @@ contains
       !solution(:state%n-1) = solution(2:) + solution(:state%n-1)
       solution(state%current) = solution(state%current) + 1
   end subroutine
-
-
-
 
   !! do an implicit restart - remove all 'too big' residuals:
   !! those, whose norm is > "last residual norm" / threshold
@@ -917,7 +935,7 @@ contains
       adaptive_anderson_check_collinearity_in_qr = .True.
   end function
 
-  !! Work routine
+  !! Internal routine.
   !! Set up the order array for this iteration
   subroutine adaptive_anderson_init_order(state)
       type(adaptive_anderson_solver_state), intent(inout) :: state
@@ -1330,7 +1348,6 @@ contains
         state%alpha = state%alpha*coef
         i = merge(1,2, coef > 1d0)
         state%adaptation_count(i) =  state%adaptation_count(i) + 1
-        state%adaptation_delayed = 0
      end if
 
 
@@ -1353,7 +1370,6 @@ contains
              if (state%non_collinear .le. state%used / 3 .and. state%used > state%history / 2) then
                      state%direction_changed = 1
                      state%direction_unchanged = 0
-                     state%adaptation_delayed = 0
                      state%last_alpha = state%alpha
                      if(state%verbosity > 0) write (*,*) "AAMIX(NA C) CORRECTED", state%alpha, state%minimal_alpha
                      state%alpha = min(state%alpha * 10, state%minimal_alpha(1)*10)
@@ -1361,7 +1377,6 @@ contains
              else if (cap < state%minimal_alpha(2) / 10) then
                      state%direction_changed = 1
                      state%direction_unchanged = 0
-                     state%adaptation_delayed = 0
                      state%last_alpha = state%alpha
                      if(state%verbosity > 0) write (*,*) "AAMIX(NA B) CORRECTED", state%alpha, state%minimal_alpha
                      state%alpha = state%minimal_alpha(2) / 10
@@ -1372,7 +1387,6 @@ contains
                      if(state%verbosity > 0) write (*,*) "AAMIX(NA A) CORRECTED", state%alpha, new
                      state%direction_changed = 1
                      state%direction_unchanged = 0
-                     state%adaptation_delayed = 0
                      state%last_alpha = state%alpha
                      state%alpha = new
                      corrected = .TRUE.
@@ -1390,7 +1404,6 @@ contains
              if (adaptive_anderson_check_raise(state, state%alpha)) return
              state%direction_changed = 0
              state%direction_unchanged = 0
-             state%adaptation_delayed = state%adaptation_delayed+1
         end subroutine
 
   end subroutine
@@ -1420,7 +1433,72 @@ contains
        state => null()
   end subroutine
 
-  !!! Private routines !!!
+!Read a configuration of a Adaptive Anderson nonlinear solver
+!from a file.
+subroutine adaptive_anderson_read_config(state, unt)
+  type(adaptive_anderson_solver_state) :: state
+  integer :: unt
+  integer :: file_size
+  character(len=:), allocatable :: config
+
+  inquire(unt, SIZE=file_size)
+  allocate( character(len=file_size) :: config)
+  read(unt) config
+
+  call read_int(config, 'HISTORY', state%history)
+  call read_int(config, 'DISCARD_FIRST', state%discard_first)
+  call read_int(config, 'FORGOT_FROM', state%forgot_from)
+  call read_int(config, 'FORGOT_FIRST', state%forgot_first)
+  call read_int(config, 'CHOOSE_WORST', state%choose_worst)
+  call read_int(config, 'BROYDEN_EACH', state%broyden_each)
+  call read_float(config, 'TOLERANCE', state%tolerance)
+  call read_float(config, 'ALPHA', state%alpha)
+  call read_bool(config, 'ADAPTIVE_ALPHA', state%adaptive_alpha)
+  call read_float(config, 'DELTA', state%delta)
+  call read_float(config, 'DELTA_GAP', state%delta_gap)
+  call read_float(config, 'DELTA_PER_VECTOR', state%delta_per_vector)
+  call read_int(config, 'ADAPT_FROM', state%adapt_from)
+  call read_float(config, 'REGULARIZATION_LAMBDA', state%regularization_lambda)
+  call read_float(config, 'RESTART_TRESHOLD', state%restart_threshold)
+  call read_float(config, 'B_II_SWITCH_TO_LINEAR', state%b_ii_switch_to_linear)
+  call read_float(config, 'LINEAR_IF_CYCLING', state%linear_if_cycling)
+
+  deallocate(config)
+end subroutine
+
+!Write configuration of a Adaptive Anderson nonlinear solver
+!to a file.
+subroutine adaptive_anderson_write_config(state, unt , prefix)
+  type(adaptive_anderson_solver_state) :: state
+  integer :: unt
+  character(len=*), optional :: prefix
+
+  if( .not. present(prefix)) then
+      prefix = ''
+  end if
+
+  call write_int(unt, prefix // 'HISTORY', state%history)
+  call write_int(unt, prefix // 'DISCARD_FIRST', state%discard_first)
+  call write_int(unt, prefix // 'FORGOT_FROM', state%forgot_from)
+  call write_int(unt, prefix // 'FORGOT_FIRST', state%forgot_first)
+  call write_int(unt, prefix // 'CHOOSE_WORST', state%choose_worst)
+  call write_int(unt, prefix // 'BROYDEN_EACH', state%broyden_each)
+  call write_float(unt, prefix // 'TOLERANCE', state%tolerance)
+  call write_float(unt, prefix // 'ALPHA', state%alpha)
+  call write_bool(unt, prefix // 'ADAPTIVE_ALPHA', state%adaptive_alpha)
+  call write_float(unt, prefix // 'DELTA', state%delta)
+  call write_float(unt, prefix // 'DELTA_GAP', state%delta_gap)
+  call write_float(unt, prefix // 'DELTA_PER_VECTOR', state%delta_per_vector)
+  call write_int(unt, prefix // 'ADAPT_FROM', state%adapt_from)
+  call write_float(unt, prefix // 'REGULARIZATION_LAMBDA', state%regularization_lambda)
+  call write_float(unt, prefix // 'RESTART_TRESHOLD', state%restart_threshold)
+  call write_float(unt, prefix // 'B_II_SWITCH_TO_LINEAR', state%b_ii_switch_to_linear)
+  call write_float(unt, prefix // 'LINEAR_IF_CYCLING', state%linear_if_cycling)
+
+end subroutine
+
+
+!!! Private routines !!!
 
   !Unified handling of lapack errors
   subroutine check_lapack(info, msg)
@@ -1442,6 +1520,7 @@ contains
        end if
   end subroutine
 
+ !!! Find the position of a given keyword in a readed plain text file
  function read_find_position(datas, name)
    integer :: read_find_position
    character(len=*) :: datas
@@ -1476,6 +1555,7 @@ contains
    read_find_position = 0
 end function
 
+! Read an integer value of given name from a string (containing plain text data)
 subroutine read_int(datas, name, value)
    character(len=*) :: datas
    character(len=*), intent(in) :: name
@@ -1487,6 +1567,7 @@ subroutine read_int(datas, name, value)
 end subroutine
 
 
+! Read a real value of given name from a string (containing plain text data)
 subroutine read_float(datas, name, value)
    character(len=*) :: datas
    character(len=*), intent(in) :: name
@@ -1498,6 +1579,7 @@ subroutine read_float(datas, name, value)
    if ( pos > 0 ) read (datas(pos:) , *, iostat=ok) value
 end subroutine
 
+! Read a bool value of given name from a string (containing plain text data)
 subroutine read_bool(datas, name, value)
    character(len=*) :: datas
    character(len=*), intent(in) :: name
@@ -1510,6 +1592,7 @@ subroutine read_bool(datas, name, value)
    value = val .ne. 0
 end subroutine
 
+!Write a bool value of a given name to a file
 subroutine write_bool(unt, name, value)
   integer unt
   character(len=*), intent(in) :: name
@@ -1518,6 +1601,7 @@ subroutine write_bool(unt, name, value)
   write (unt,*) name, ' ', merge(0,1, value)
 end subroutine
 
+!Write a real value of a given name to a file
 subroutine write_float(unt, name, value)
   integer unt
   character(len=*), intent(in) :: name
@@ -1526,6 +1610,7 @@ subroutine write_float(unt, name, value)
   write (unt,*) name, ' ', value
 end subroutine
 
+!Write an integer value of a given name to a file
 subroutine write_int(unt, name, value)
   integer unt
   character(len=*), intent(in) :: name
@@ -1534,65 +1619,5 @@ subroutine write_int(unt, name, value)
   write (unt,*) name, ' ', value
 end subroutine
 
-subroutine adaptive_anderson_read_config(state, unt)
-  type(adaptive_anderson_solver_state) :: state
-  integer :: unt
-  integer :: file_size
-  character(len=:), allocatable :: config
-
-  inquire(unt, SIZE=file_size)
-  allocate( character(len=file_size) :: config)
-  read(unt) config
-
-  call read_int(config, 'HISTORY', state%history)
-  call read_int(config, 'DISCARD_FIRST', state%discard_first)
-  call read_int(config, 'FORGOT_FROM', state%forgot_from)
-  call read_int(config, 'FORGOT_FIRST', state%forgot_first)
-  call read_int(config, 'CHOOSE_WORST', state%choose_worst)
-  call read_int(config, 'BROYDEN_EACH', state%broyden_each)
-  call read_float(config, 'TOLERANCE', state%tolerance)
-  call read_float(config, 'ALPHA', state%alpha)
-  call read_bool(config, 'ADAPTIVE_ALPHA', state%adaptive_alpha)
-  call read_float(config, 'DELTA', state%delta)
-  call read_float(config, 'DELTA_GAP', state%delta_gap)
-  call read_float(config, 'DELTA_PER_VECTOR', state%delta_per_vector)
-  call read_int(config, 'ADAPT_FROM', state%adapt_from)
-  call read_float(config, 'REGULARIZATION_LAMBDA', state%regularization_lambda)
-  call read_float(config, 'RESTART_TRESHOLD', state%restart_threshold)
-  call read_float(config, 'B_II_SWITCH_TO_LINEAR', state%b_ii_switch_to_linear)
-  call read_float(config, 'LINEAR_IF_CYCLING', state%linear_if_cycling)
-
-  deallocate(config)
-
-end subroutine
-
-subroutine adaptive_anderson_write_config(state, unt , prefix)
-  type(adaptive_anderson_solver_state) :: state
-  integer :: unt
-  character(len=*), optional :: prefix
-
-  if( .not. present(prefix)) then
-      prefix = ''
-  end if
-
-  call write_int(unt, prefix // 'HISTORY', state%history)
-  call write_int(unt, prefix // 'DISCARD_FIRST', state%discard_first)
-  call write_int(unt, prefix // 'FORGOT_FROM', state%forgot_from)
-  call write_int(unt, prefix // 'FORGOT_FIRST', state%forgot_first)
-  call write_int(unt, prefix // 'CHOOSE_WORST', state%choose_worst)
-  call write_int(unt, prefix // 'BROYDEN_EACH', state%broyden_each)
-  call write_float(unt, prefix // 'TOLERANCE', state%tolerance)
-  call write_float(unt, prefix // 'ALPHA', state%alpha)
-  call write_bool(unt, prefix // 'ADAPTIVE_ALPHA', state%adaptive_alpha)
-  call write_float(unt, prefix // 'DELTA', state%delta)
-  call write_float(unt, prefix // 'DELTA_GAP', state%delta_gap)
-  call write_float(unt, prefix // 'DELTA_PER_VECTOR', state%delta_per_vector)
-  call write_int(unt, prefix // 'ADAPT_FROM', state%adapt_from)
-  call write_float(unt, prefix // 'REGULARIZATION_LAMBDA', state%regularization_lambda)
-  call write_float(unt, prefix // 'RESTART_TRESHOLD', state%restart_threshold)
-  call write_float(unt, prefix // 'B_II_SWITCH_TO_LINEAR', state%b_ii_switch_to_linear)
-  call write_float(unt, prefix // 'LINEAR_IF_CYCLING', state%linear_if_cycling)
-
-end subroutine
 
 end module
